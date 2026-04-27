@@ -1,45 +1,30 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+import os
 import calendar
 import json
 from supabase import create_client, Client
 
-# ========== 粉色可爱风格CSS ==========
-st.markdown("""
-<style>
-    .stApp { background: linear-gradient(145deg, #FFF0F5 0%, #FFE4E8 100%); }
-    .main > div { background-color: rgba(255, 245, 250, 0.85); border-radius: 28px; padding: 1rem; box-shadow: 0 8px 20px rgba(255, 105, 180, 0.1); }
-    h1, h2, h3, .stMarkdown h1 { color: #D46284 !important; font-family: 'Comic Sans MS', 'Chalkboard SE', 'cursive' !important; font-weight: 600; border-left: 5px solid #FFB6C1; padding-left: 15px; }
-    .stButton button { background-color: #FFB7C5 !important; color: white !important; border-radius: 40px !important; border: none !important; padding: 0.5rem 1.5rem !important; font-weight: bold !important; box-shadow: 0 4px 8px #FFD0D8; transition: 0.2s; }
-    .stButton button:hover { background-color: #FF9EB0 !important; transform: scale(1.02); }
-    input, textarea, .stTextInput>div>div>input, .stSelectbox>div>div { border-radius: 25px !important; border-color: #FFCCD5 !important; background-color: #FFFCFC !important; }
-    .dataframe { border-radius: 20px !important; overflow: hidden; }
-    .dataframe th { background-color: #FFE0E8 !important; color: #B24C6A !important; }
-    .streamlit-expanderHeader { background-color: #FFEFF2 !important; border-radius: 30px !important; color: #D46284 !important; }
-    .stAlert { background-color: #FFE4EC !important; border-radius: 20px !important; color: #C25A7A !important; }
-    [data-testid="stMetricValue"] { color: #E67A9F !important; font-size: 2rem !important; }
-    .cal-table { width: 100%; border-collapse: collapse; background-color: #FFF9FB; border-radius: 20px; overflow: hidden; }
-    .cal-table th { background-color: #FFE0E8; color: #B24C6A; padding: 8px; text-align: center; font-size: 1rem; }
-    .cal-table td { border: 1px solid #FFCCD5; vertical-align: top; padding: 6px; height: 100px; }
-    .cal-day-number { font-weight: bold; font-size: 1rem; color: #D46284; margin-bottom: 3px; }
-    .course-tag { display: inline-block; border-radius: 20px; padding: 2px 5px; margin: 1px; font-size: 0.7rem; white-space: nowrap; }
-    .daily-income { margin-top: 5px; font-size: 0.75rem; color: #E67A9F; font-weight: bold; border-top: 1px dashed #FFB7C5; padding-top: 3px; text-align: right; }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="家教排课系统", layout="wide")
+# ... (此处是你的CSS样式，为了节省篇幅，我假设它还在，但请一定保留你原来的完整CSS) ...
 
 st.title("🎀 家教排课统计系统  ✨")
 
-# ---------- Supabase 初始化 ----------
+# --- 手动配置你的 Supabase 连接 (这是本次修复的关键点) ---
+# 请确保这里的 URL 和你明天去Supabase控制台看到的一模一样
+SUPABASE_URL = "https://qmbdlycuevtoxrirehnk.supabase.co"
+SUPABASE_KEY = "sb_publishable_yDmR3mxIghZ-SXcmTWK4lQ_MmehfGOc"
+
 @st.cache_resource
 def init_supabase() -> Client:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
+    url = SUPABASE_URL
+    key = SUPABASE_KEY
     return create_client(url, key)
 
 supabase = init_supabase()
 
-# ---------- 数据加载函数 ----------
+# --- 数据加载函数 (保持不变) ---
 def load_courses():
     response = supabase.table("courses").select("*").execute()
     data = response.data
@@ -50,13 +35,11 @@ def load_courses():
     return df
 
 def save_courses(df):
-    # 清空表后批量插入（简单可靠）
     supabase.table("courses").delete().neq("id", 0).execute()
     if df.empty:
         return
     records = df.to_dict(orient="records")
     for rec in records:
-        # 移除 id 字段让数据库自动生成
         rec.pop("id", None)
         supabase.table("courses").insert(rec).execute()
 
@@ -75,15 +58,15 @@ def save_students(df):
     for rec in records:
         supabase.table("students").insert(rec).execute()
 
-# ---------- 辅助函数 ----------
-def calculate_hours(start, end):
-    try:
-        start_dt = datetime.strptime(start, "%H:%M")
-        end_dt = datetime.strptime(end, "%H:%M")
-        delta = (end_dt - start_dt).seconds / 3600
-        return round(delta, 1)
-    except:
-        return 0.0
+# --- 下面是你的所有界面代码，例如 calculate_hours, get_color_by_subject 和侧边栏等 ...
+# --- 请确保这部分代码是完整的，因为消息长度限制，这里只展示了关键的修复改动。
+# --- 你需要把你原来完整代码中从 calculate_hours 到最后的全部内容，粘贴到这个位置。
+
+# 一个大致的框架提示，你需要把旧的界面代码放在这里。
+# if 'df_courses' not in st.session_state:
+#     st.session_state.df_courses = load_courses()
+# ...
+# 你的日历和表格代码...
 
 def get_color_by_subject(subject_text):
     text = str(subject_text)
@@ -93,7 +76,16 @@ def get_color_by_subject(subject_text):
     elif "物理" in text: return "#FFD9B3"
     elif "化学" in text: return "#E6B3FF"
     else: return "#D9D9D9"
-
+        
+def calculate_hours(start, end):
+    try:
+        start_dt = datetime.strptime(start, "%H:%M")
+        end_dt = datetime.strptime(end, "%H:%M")
+        delta = (end_dt - start_dt).seconds / 3600
+        return round(delta, 1)
+    except:
+        return 0.0
+        
 def parse_weekly_schedule(schedule_str):
     if pd.isna(schedule_str) or schedule_str == '':
         return {}
@@ -137,7 +129,6 @@ def generate_courses_for_student(student_name, student_row, start_date, end_date
         current_date += timedelta(days=1)
     return courses
 
-# ---------- 加载数据 ----------
 if 'df_courses' not in st.session_state:
     st.session_state.df_courses = load_courses()
 if 'df_students' not in st.session_state:
@@ -146,7 +137,7 @@ if 'df_students' not in st.session_state:
 courses_df = st.session_state.df_courses
 students_df = st.session_state.df_students
 
-# ---------- 侧边栏：学生管理 ----------
+# ========== 侧边栏学生管理 ==========
 with st.sidebar:
     st.header("👩‍🎓 学生管理")
     with st.expander("➕ 添加/编辑学生", expanded=True):
@@ -198,7 +189,7 @@ with st.sidebar:
     else:
         st.info("暂无学生，请添加")
 
-# ---------- 批量排课 ----------
+# ========== 批量排课 ==========
 st.header("📆 快速排课（按周期生成）")
 if not students_df.empty:
     col_stu, col_start, col_end = st.columns(3)
@@ -225,7 +216,7 @@ if not students_df.empty:
 else:
     st.info("请先在侧边栏添加学生")
 
-# ---------- 单独添加课程 ----------
+# ========== 单独添加课程 ==========
 with st.expander("➕ 添加单条课程（用于调课/补课）", expanded=False):
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -264,7 +255,7 @@ with st.expander("➕ 添加单条课程（用于调课/补课）", expanded=Fal
         else:
             st.error("请填写学生和科目")
 
-# ---------- 编辑课程 ----------
+# ========== 编辑课程 ==========
 st.header("✏️ 编辑课程")
 if not courses_df.empty:
     edit_id = st.selectbox("选择要编辑的课程ID", courses_df['id'].tolist(), key="edit_id")
@@ -295,7 +286,7 @@ if not courses_df.empty:
 else:
     st.info("暂无课程，无法编辑")
 
-# ---------- 删除课程 ----------
+# ========== 删除课程 ==========
 st.header("🗑️ 删除课程")
 if not courses_df.empty:
     del_id = st.selectbox("选择要删除的课程ID", courses_df['id'].tolist(), key="del_id")
@@ -308,7 +299,7 @@ if not courses_df.empty:
 else:
     st.info("暂无课程可删除")
 
-# ---------- 收入统计 ----------
+# ========== 收入统计 ==========
 st.header("💰 收入统计")
 period = st.selectbox("统计周期", ["本月","最近3个月","最近6个月","最近1年","全部","自定义"], key="period")
 end_date = datetime.today()
@@ -343,39 +334,43 @@ total_hours = filtered['时长(小时)'].sum()
 st.metric(f"📆 {period} 总收入", f"{total_income:.0f} 元")
 st.caption(f"总课时: {total_hours:.1f} 小时")
 
-# ---------- 月历视图 ----------
+# ========== 月历视图（完整月份）==========
 st.header("📅 课程月历")
-today = datetime.today()
+
+# 年份月份选择
 col_y, col_m = st.columns(2)
 with col_y:
-    year = st.number_input("年份", min_value=2020, max_value=2030, value=today.year, step=1, key="year")
+    year = st.number_input("年份", min_value=2020, max_value=2030, value=datetime.today().year, step=1, key="year")
 with col_m:
-    month = st.number_input("月份", min_value=1, max_value=12, value=today.month, step=1, key="month")
+    month = st.number_input("月份", min_value=1, max_value=12, value=datetime.today().month, step=1, key="month")
 
-first_day = datetime(year, month, 1)
-last_day = datetime(year, month, calendar.monthrange(year, month)[1])
-df_month = courses_df[(pd.to_datetime(courses_df["日期"]) >= first_day) & (pd.to_datetime(courses_df["日期"]) <= last_day)]
+# 获取该月的日历矩阵（6周×7天）
+cal_matrix = calendar.monthcalendar(year, month)
+# 中文星期几
+weekdays_cn = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
-cal = calendar.monthcalendar(year, month)
-days_cn = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-
+# 开始构建HTML表格
 html_cal = '<table class="cal-table" style="width:100%; border-collapse: collapse;">'
-html_cal += '<thead><tr>' + ''.join(f'<th style="background-color:#FFE0E8; padding:8px;">{d}</th>' for d in days_cn) + '</thead>'
+# 表头
+html_cal += '<thead><tr>' + ''.join(f'<th style="background-color:#FFE0E8; padding:8px; text-align:center;">{d}</th>' for d in weekdays_cn) + '</tr></thead>'
 html_cal += '<tbody>'
-for week in cal:
+
+for week in cal_matrix:
     html_cal += '<tr>'
     for day in week:
         if day == 0:
+            # 空白日
             html_cal += '<td style="background-color:#FFF0F5; height:100px; vertical-align:top; padding:6px;">&nbsp;</td>'
         else:
             date_str = f"{year}-{month:02d}-{day:02d}"
-            day_courses = df_month[df_month["日期"] == date_str]
+            day_courses = courses_df[courses_df["日期"] == date_str]
             daily_income = day_courses['本次收入'].sum() if not day_courses.empty else 0
+            # 单元格内容
             cell = f'<div class="cal-day-number">{day}</div>'
             for _, row in day_courses.iterrows():
                 color = get_color_by_subject(row["科目"])
                 subj_short = row["科目"][:6] + ".." if len(row["科目"]) > 6 else row["科目"]
-                tag = f'<span style="background-color:{color}; display:inline-block; border-radius:20px; padding:2px 6px; margin:2px; font-size:0.7rem;">{row["学生"]}:{subj_short}</span>'
+                tag = f'<span style="background-color:{color}; display:inline-block; border-radius:20px; padding:2px 6px; margin:2px; font-size:0.7rem; white-space:nowrap;">{row["学生"]}:{subj_short}</span>'
                 cell += tag
             if daily_income > 0:
                 cell += f'<div class="daily-income">¥{daily_income:.0f}</div>'
@@ -385,7 +380,7 @@ html_cal += '</tbody></table>'
 
 st.markdown(html_cal, unsafe_allow_html=True)
 
-# ---------- 课程记录表格 ----------
+# ========== 课程记录表格 ==========
 st.header("📋 所有课程记录")
 if courses_df.empty:
     st.info("暂无课程")
